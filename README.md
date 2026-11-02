@@ -6,13 +6,16 @@ Every page is a node. Solid edges show the page hierarchy (parent → child), da
 
 ## Features
 
-- **Force-directed graph** (D3.js) with zoom, pan, drag, and an empty root node standing for the workspace itself
+- **Force-directed graph** (D3.js) with zoom, pan, drag, fit-to-screen, freeze, and an empty root node standing for the workspace itself
 - **Two edge types**: hierarchy and mentions (`@page` mentions, `notion.so` links, *link to page* blocks)
-- **Incremental sync**: hierarchy in one API call per 100 pages; mentions re-read only for pages whose `last_edited_time` changed
-- **Auto-refresh**: on launch, when the app comes back to the foreground, and every 15 minutes while open
-- **Offline-first UI**: the last graph is cached on the device and shown instantly
-- **Search** (Enter jumps to the first match), **branch colouring**, optional **database rows**, side panel with path, sub-pages and mentions
-- **Installable** on iPhone (Safari → Add to Home Screen) and Windows / macOS (Edge or Chrome → Install app)
+- **Filters**: search (highlight or filter mode), max depth, last-edited window, page / database / row types, linked-only pages, per-branch visibility, "keep path" to preserve the hierarchy around filtered pages
+- **Local graph**: show only the N-hop neighbourhood of the selected page, like Obsidian's local graph
+- **Smart labels**: none / important / all, importance threshold that adapts to zoom, collision avoidance, constant on-screen size
+- **Appearance**: colour by branch, depth, recency or type; size by connections or sub-pages; edge and node scale; force tuning (repulsion, link length, gravity)
+- **Page panel**: clickable breadcrumb, children / descendants / mentions stats, incoming and outgoing mentions, open in Notion, one-click local graph or hide branch
+- **Search** with ranked suggestions and keyboard navigation; shortcuts: `/` search, `Esc` deselect, `F` fit, `L` cycle labels, `G` settings, `R` refresh, `Space` freeze, `+`/`-` zoom
+- **Incremental sync**: hierarchy in one API call per 100 pages; mentions re-read only for pages whose `last_edited_time` changed; auto-refresh on launch, on focus and every 15 minutes
+- **Offline-first UI** and **installable** on iPhone (Safari → Add to Home Screen) and Windows / macOS (Edge or Chrome → Install app); settings are remembered per device
 
 ## Architecture
 

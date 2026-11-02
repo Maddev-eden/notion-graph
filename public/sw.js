@@ -1,5 +1,5 @@
 // Cache de l'interface uniquement : les données passent toujours par le réseau (/api).
-const CACHE = "notion-graph-shell-v1";
+const CACHE = "notion-graph-shell-v2";
 const SHELL = ["/", "/index.html", "/app.js", "/d3.min.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

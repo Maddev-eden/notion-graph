@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#1a1a19">
+<meta name="theme-color" content="#161615">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,104 +14,356 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <style>
   :root{
-    --bg:#1a1a19; --panel:#232322; --line:#383835;
-    --ink:#f0efec; --ink2:#c3c2b7; --muted:#8a897f;
-    --node:#9b9a91; --accent:#9085e9; --edge:#4a4a46; --edge-link:#6a6a64; --err:#e66767;
+    --bg:#161615; --bg2:#1d1d1c; --panel:rgba(32,32,31,.86); --panel-solid:#20201f;
+    --line:#33332f; --line2:#45453f;
+    --ink:#f0efec; --ink2:#c3c2b7; --muted:#8a897f; --faint:#5c5b55;
+    --node:#9b9a91; --accent:#9085e9; --accent-ink:#c9c2ff; --edge:#3f3f3b; --edge-link:#7a74c4; --err:#e66767; --ok:#52b788;
+    --r:12px;
     --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
     --sl:env(safe-area-inset-left,0px); --sr:env(safe-area-inset-right,0px);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overscroll-behavior:none;
-    font:14px/1.4 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
-  #bar{position:fixed;top:0;left:0;right:0;display:flex;gap:8px;align-items:center;z-index:5;
-    padding:calc(8px + var(--st)) calc(10px + var(--sr)) 14px calc(10px + var(--sl));
-    background:linear-gradient(var(--bg) 60%,transparent)}
-  #q{flex:1 1 160px;min-width:0;max-width:280px;background:var(--panel);border:1px solid var(--line);color:var(--ink);
-    border-radius:8px;padding:7px 10px;font:inherit}
-  button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;
-    padding:7px 11px;font:inherit;cursor:pointer;flex:none}
-  button:hover{border-color:var(--muted)}
-  button:disabled{opacity:.5;cursor:default}
-  #status{margin-left:auto;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overscroll-behavior:none;overflow:hidden;
+    font:13px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  button,input,select{font:inherit;color:inherit}
+  svg#g{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-action:none;cursor:grab;
+    background:radial-gradient(1200px 800px at 50% 45%,#1c1c1b 0%,var(--bg) 70%)}
+  svg#g:active{cursor:grabbing}
+  .ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+  /* ---------- top bar ---------- */
+  #bar{position:fixed;z-index:10;top:calc(10px + var(--st));left:calc(10px + var(--sl));right:calc(10px + var(--sr));
+    display:flex;gap:8px;align-items:flex-start;pointer-events:none}
+  #bar>*{pointer-events:auto}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;min-width:36px;padding:0 10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;cursor:pointer;color:var(--ink2);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:border-color .15s,color .15s,background .15s}
+  .btn:hover{border-color:var(--line2);color:var(--ink)}
+  .btn.on{color:var(--accent-ink);border-color:#4b4680;background:rgba(144,133,233,.14)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn .badge{min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:#16161a;font-size:10px;font-weight:700;
+    display:none;align-items:center;justify-content:center}
+  .btn .badge.show{display:inline-flex}
+  #searchWrap{position:relative;flex:0 1 340px;min-width:0}
+  #q{width:100%;height:36px;padding:0 34px 0 34px;background:var(--panel);border:1px solid var(--line);border-radius:10px;outline:none;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  #q:focus{border-color:#4b4680;box-shadow:0 0 0 3px rgba(144,133,233,.15)}
+  #searchWrap .ico.lead{position:absolute;z-index:1;left:11px;top:10px;color:var(--muted);pointer-events:none}
+  #qClear{position:absolute;right:6px;top:6px;width:24px;height:24px;border:0;background:none;color:var(--muted);cursor:pointer;display:none;border-radius:6px}
+  #qClear:hover{color:var(--ink);background:var(--line)}
+  #results{position:absolute;left:0;right:0;top:42px;background:var(--panel-solid);border:1px solid var(--line);border-radius:var(--r);
+    padding:4px;display:none;max-height:min(60vh,380px);overflow:auto;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+  #results .r{display:flex;gap:8px;align-items:center;padding:7px 9px;border-radius:8px;cursor:pointer}
+  #results .r.act,#results .r:hover{background:#2a2a28}
+  #results .r .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+  #results .r .p{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
+  #results .r .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  #results .empty{padding:10px;color:var(--muted)}
+  #status{margin-left:auto;align-self:center;display:flex;align-items:center;gap:8px;padding:0 10px;height:36px;border-radius:10px;
+    background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:12px;white-space:nowrap;
+    font-variant-numeric:tabular-nums;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);max-width:40vw;overflow:hidden}
+  #status .led{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+  #status.busy .led{background:var(--accent);animation:pulse 1s infinite}
+  #status.err .led{background:var(--err)}
   #status.err{color:var(--err)}
-  svg{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-action:none;cursor:grab}
-  .edge{stroke:var(--edge);stroke-width:1}
-  .edge.link{stroke:var(--edge-link);stroke-dasharray:3 3}
-  .node circle{stroke:var(--bg);stroke-width:1.5;cursor:pointer}
-  .node.root circle{fill:none;stroke:var(--ink2);stroke-width:1.5}
-  .node.database circle{stroke:var(--ink2);stroke-width:1}
-  .node text{fill:var(--ink2);font-size:11px;pointer-events:none;paint-order:stroke;
-    stroke:var(--bg);stroke-width:3px;stroke-linejoin:round}
-  .dim{opacity:.12}
-  .hl circle{stroke:var(--ink)}
-  .edge.hl{stroke:var(--accent);stroke-width:1.5;opacity:1}
-  .sheet{position:fixed;z-index:8;background:#232322;border:1px solid var(--line);border-radius:12px;
-    padding:12px 14px;display:none;overflow:auto}
-  .sheet h3{margin:0 0 4px;font-size:15px}
-  .sheet .meta{color:var(--muted);margin:6px 0}
-  .sheet a{color:var(--accent)}
-  .sheet ul{margin:4px 0 0;padding-left:18px;color:var(--ink2)}
-  .sheet li{cursor:pointer;padding:3px 0}
-  .sheet label{display:flex;gap:8px;align-items:center;color:var(--ink2);padding:6px 0;cursor:pointer}
-  .sheet input[type=password],.sheet input[type=text]{width:100%;background:var(--bg);border:1px solid var(--line);
-    color:var(--ink);border-radius:8px;padding:8px;font:inherit}
-  .close{position:absolute;right:8px;top:8px;padding:2px 9px}
-  #panel{right:calc(10px + var(--sr));top:calc(58px + var(--st));width:300px;max-height:70vh}
-  #settings{right:calc(10px + var(--sr));top:calc(58px + var(--st));width:320px;max-height:80vh}
-  #legend{position:fixed;left:calc(10px + var(--sl));bottom:calc(10px + var(--sb));background:rgba(35,35,34,.9);
-    border:1px solid var(--line);border-radius:10px;padding:8px 10px;max-width:240px;z-index:5;font-size:12px}
-  #legend .row{display:flex;gap:6px;align-items:center;color:var(--ink2);cursor:pointer;padding:1px 0}
-  #legend .sw{width:10px;height:10px;border-radius:50%;flex:none}
-  #legend .key{color:var(--muted);margin-top:6px;border-top:1px solid var(--line);padding-top:6px}
-  #legend.min .row{display:none}
-  #legend.min .key{margin:0;border:0;padding:0}
-  #gate{position:fixed;inset:0;z-index:9;display:none;align-items:center;justify-content:center;background:var(--bg);padding:20px}
-  #gate div{max-width:380px;width:100%}
-  #gate h2{margin:0 0 6px}
-  #gate p{color:var(--ink2)}
-  #gate .err{color:var(--err);min-height:1.4em}
-  #tip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--line);
-    border-radius:6px;padding:4px 8px;display:none;z-index:7;white-space:nowrap}
-  @media (max-width:640px){
-    #panel,#settings{left:calc(8px + var(--sl));right:calc(8px + var(--sr));top:auto;width:auto;
-      bottom:calc(8px + var(--sb));max-height:55vh}
-    #legend{max-width:60vw}
-    .node text{font-size:12px}
+  #statusText{overflow:hidden;text-overflow:ellipsis}
+  @keyframes pulse{50%{opacity:.3}}
+
+  /* ---------- zoom controls ---------- */
+  #zoomCtl{position:fixed;z-index:9;right:calc(10px + var(--sr));bottom:calc(10px + var(--sb));display:flex;flex-direction:column;gap:6px}
+
+  /* ---------- panels ---------- */
+  .panel{position:fixed;z-index:11;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 16px 40px rgba(0,0,0,.4);display:none;flex-direction:column;overflow:hidden}
+  .panel.open{display:flex}
+  .panel header{display:flex;align-items:center;gap:8px;padding:12px 12px 10px 14px;border-bottom:1px solid var(--line)}
+  .panel header h2{margin:0;font-size:13px;font-weight:600;flex:1;color:var(--ink)}
+  .panel .body{overflow:auto;padding:4px 0 10px}
+  .iconbtn{width:28px;height:28px;border:0;border-radius:8px;background:none;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  .iconbtn:hover{background:var(--line);color:var(--ink)}
+  #settings{left:calc(10px + var(--sl));top:calc(56px + var(--st));width:300px;max-height:calc(100vh - 76px - var(--st) - var(--sb))}
+  #info{right:calc(10px + var(--sr));top:calc(56px + var(--st));width:320px;max-height:calc(100vh - 76px - var(--st) - var(--sb))}
+
+  details.sec{border-bottom:1px solid var(--line)}
+  details.sec:last-of-type{border-bottom:0}
+  details.sec summary{list-style:none;display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;color:var(--ink);font-weight:600;user-select:none}
+  details.sec summary::-webkit-details-marker{display:none}
+  details.sec summary .chev{margin-left:auto;transition:transform .15s;color:var(--muted)}
+  details.sec[open] summary .chev{transform:rotate(90deg)}
+  details.sec .inner{padding:0 14px 12px;display:flex;flex-direction:column;gap:10px}
+  .row{display:flex;align-items:center;gap:10px;justify-content:space-between;min-height:26px}
+  .row>.lbl{color:var(--ink2)}
+  .row>.lbl small{display:block;color:var(--muted);font-size:11px}
+  .hint{color:var(--muted);font-size:11px;margin-top:-4px}
+
+  /* switch */
+  .sw{position:relative;width:32px;height:18px;flex:none}
+  .sw input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;z-index:1}
+  .sw i{position:absolute;inset:0;border-radius:9px;background:#3a3a36;transition:background .15s}
+  .sw i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#d6d5cf;transition:transform .15s}
+  .sw input:checked+i{background:var(--accent)}
+  .sw input:checked+i::after{transform:translateX(14px);background:#fff}
+  .sw input:focus-visible+i{box-shadow:0 0 0 3px rgba(144,133,233,.35)}
+
+  /* segmented */
+  .seg{display:flex;background:#151514;border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px;width:100%}
+  .seg button{flex:1;border:0;background:none;color:var(--muted);padding:5px 4px;border-radius:7px;cursor:pointer;font-size:12px;white-space:nowrap}
+  .seg button:hover{color:var(--ink)}
+  .seg button.on{background:#2e2e2b;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.4)}
+
+  /* range */
+  .rng{display:flex;flex-direction:column;gap:4px}
+  .rng .top{display:flex;justify-content:space-between;color:var(--ink2)}
+  .rng output{color:var(--muted);font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:none;margin:0}
+  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:#3a3a36}
+  input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:#3a3a36}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#e8e7e2;margin-top:-5px;border:0}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#e8e7e2;border:0}
+
+  select.sel{width:100%;background:#151514;border:1px solid var(--line);border-radius:9px;padding:6px 8px;color:var(--ink)}
+
+  .chips{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow:auto;margin:0 -6px}
+  .chip{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:7px;cursor:pointer;color:var(--ink2)}
+  .chip:hover{background:#2a2a28}
+  .chip .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .chip .n{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
+  .chip.off{color:var(--faint)}
+  .chip.off .dot{opacity:.25}
+  .chip input{accent-color:var(--accent);margin:0}
+  .linkbtns{display:flex;gap:10px}
+  .lnk{border:0;background:none;color:var(--accent-ink);cursor:pointer;padding:0;font-size:12px}
+  .lnk:hover{text-decoration:underline}
+  .foot{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+  .foot .btn{flex:1;height:32px;backdrop-filter:none}
+
+  /* info panel */
+  #info .crumbs{display:flex;flex-wrap:wrap;gap:2px 4px;padding:10px 14px 0;color:var(--muted);font-size:11px}
+  #info .crumbs a{color:var(--muted);cursor:pointer;text-decoration:none}
+  #info .crumbs a:hover{color:var(--ink)}
+  #info .ttl{padding:4px 14px 0;font-size:17px;font-weight:650;line-height:1.3;color:var(--ink);word-break:break-word}
+  #info .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px 14px}
+  #info .stat{background:#181817;border:1px solid var(--line);border-radius:10px;padding:7px 8px}
+  #info .stat b{display:block;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+  #info .stat span{color:var(--muted);font-size:11px}
+  #info .actions{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}
+  #info .actions .btn{height:30px;font-size:12px;backdrop-filter:none}
+  #info .actions a.btn{text-decoration:none}
+  #info .meta{padding:0 14px 8px;color:var(--muted);font-size:11px}
+  #info h3{margin:6px 14px 4px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  #info ul{list-style:none;margin:0 8px 6px;padding:0}
+  #info li{display:flex;gap:8px;align-items:center;padding:5px 6px;border-radius:7px;cursor:pointer;color:var(--ink2)}
+  #info li:hover{background:#2a2a28;color:var(--ink)}
+  #info li .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  #info li .dir{margin-left:auto;color:var(--muted);font-size:11px}
+
+  /* legend */
+  #legend{position:fixed;z-index:8;left:calc(10px + var(--sl));bottom:calc(10px + var(--sb));max-width:260px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;font-size:12px;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  #legend .lrow{display:flex;gap:7px;align-items:center;color:var(--ink2);padding:2px 0;cursor:pointer}
+  #legend .lrow.off{color:var(--faint)}
+  #legend .lrow.off .dot{opacity:.25}
+  #legend .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  #legend .n{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums;padding-left:8px}
+  #legend .grad{height:8px;border-radius:4px;margin:4px 0 2px}
+  #legend .ends{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
+  #legend .key{display:flex;gap:10px;color:var(--muted);font-size:11px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+  #legend .key span{display:inline-flex;align-items:center;gap:4px}
+  #legend.min .body{display:none}
+  #legend.min .key{margin:0;padding:0;border:0}
+
+  /* graph */
+  .edge{stroke:var(--edge);stroke-width:1;fill:none}
+  .edge.link{stroke:var(--edge-link);stroke-opacity:.75;stroke-dasharray:3 3}
+  .node{cursor:pointer}
+  .node circle{stroke:var(--bg);stroke-width:1.5;transition:opacity .15s}
+  .node.root circle{fill:none!important;stroke:var(--ink2);stroke-width:1.5}
+  .node.database circle{stroke:var(--ink2);stroke-width:1.2}
+  .node.ctx circle{opacity:.35}
+  .node text{fill:var(--ink2);pointer-events:none;paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round;display:none}
+  .node.lab text{display:block}
+  .node.match text{fill:#fff;font-weight:600}
+  .node.match circle{stroke:var(--accent-ink);stroke-width:2}
+  .node.sel circle{stroke:#fff;stroke-width:2.5}
+  .node.hl text{fill:var(--ink)}
+  .dim{opacity:.1}
+  .edge.hl{stroke:var(--accent);stroke-opacity:1;stroke-width:1.6}
+
+  #tip{position:fixed;pointer-events:none;background:var(--panel-solid);border:1px solid var(--line);border-radius:8px;
+    padding:5px 9px;display:none;z-index:20;max-width:320px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+  #tip b{display:block;color:var(--ink);font-weight:600}
+  #tip span{color:var(--muted);font-size:11px}
+
+  #toast{position:fixed;left:50%;bottom:calc(20px + var(--sb));transform:translateX(-50%);z-index:30;background:var(--panel-solid);
+    border:1px solid var(--line);border-radius:10px;padding:8px 14px;color:var(--ink2);display:none;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+
+  #gate{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:var(--bg);padding:20px}
+  #gate .card{max-width:380px;width:100%;background:var(--panel-solid);border:1px solid var(--line);border-radius:16px;padding:22px}
+  #gate h1{margin:0 0 6px;font-size:18px}
+  #gate p{color:var(--ink2);margin:0 0 14px}
+  #gate input{width:100%;height:40px;background:#151514;border:1px solid var(--line);border-radius:10px;padding:0 12px;outline:none}
+  #gate input:focus{border-color:#4b4680}
+  #gate .err{color:var(--err);min-height:1.4em;margin:8px 0}
+  #gate .btn{width:100%;height:40px;background:var(--accent);color:#16161a;font-weight:600;border:0}
+
+  #empty{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:5;color:var(--muted);text-align:center}
+  #empty div{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+
+  kbd{font:11px ui-monospace,monospace;background:#2a2a28;border:1px solid var(--line2);border-bottom-width:2px;border-radius:4px;padding:0 4px;color:var(--ink2)}
+
+  @media (max-width:700px){
+    #searchWrap{flex:1 1 auto}
+    #status{display:none}
+    #settings,#info{left:calc(6px + var(--sl));right:calc(6px + var(--sr));top:auto;width:auto;bottom:calc(6px + var(--sb));
+      max-height:68vh;border-radius:16px}
+    #legend{max-width:62vw}
+    #zoomCtl{bottom:calc(10px + var(--sb))}
+    .hide-m{display:none}
   }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-3 3.6M6.3 7.6A17 17 0 0 0 3 12s4 6 9 6a9 9 0 0 0 3.7-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+</svg>
+
 <div id="bar">
-  <input id="q" type="search" placeholder="Rechercher…" autocomplete="off" enterkeyhint="search">
-  <button id="refresh" title="Actualiser">↻</button>
-  <button id="gear" title="Réglages">⚙</button>
-  <span id="status">Chargement…</span>
+  <div id="searchWrap">
+    <svg class="ico lead"><use href="#i-search"/></svg>
+    <input id="q" type="search" placeholder="Rechercher une page…  /" autocomplete="off" enterkeyhint="search" spellcheck="false">
+    <button id="qClear" title="Effacer (Échap)"><svg class="ico"><use href="#i-x"/></svg></button>
+    <div id="results"></div>
+  </div>
+  <button class="btn" id="bSettings" title="Réglages du graphe (G)"><svg class="ico"><use href="#i-sliders"/></svg><span class="hide-m">Réglages</span><span class="badge" id="fBadge"></span></button>
+  <button class="btn" id="bRefresh" title="Actualiser (R)"><svg class="ico"><use href="#i-refresh"/></svg></button>
+  <div id="status"><span class="led"></span><span id="statusText">Chargement…</span></div>
 </div>
+
+<div id="zoomCtl">
+  <button class="btn" id="bZin" title="Zoom avant (+)"><svg class="ico"><use href="#i-plus"/></svg></button>
+  <button class="btn" id="bZout" title="Zoom arrière (−)"><svg class="ico"><use href="#i-minus"/></svg></button>
+  <button class="btn" id="bFit" title="Tout afficher (F)"><svg class="ico"><use href="#i-fit"/></svg></button>
+  <button class="btn" id="bFreeze" title="Figer la disposition (Espace)"><svg class="ico"><use href="#i-pause"/></svg></button>
+</div>
+
 <svg id="g"></svg>
+
+<aside id="settings" class="panel" aria-label="Réglages du graphe">
+  <header><h2>Réglages du graphe</h2><button class="iconbtn" data-close="settings" title="Fermer"><svg class="ico"><use href="#i-x"/></svg></button></header>
+  <div class="body">
+    <details class="sec" open>
+      <summary>Filtres<svg class="ico chev"><use href="#i-chev"/></svg></summary>
+      <div class="inner">
+        <div class="row"><span class="lbl">Recherche</span>
+          <div class="seg" data-k="searchMode" style="width:170px"><button data-v="highlight">Surligner</button><button data-v="filter">Filtrer</button></div></div>
+        <div class="rng"><div class="top"><span>Profondeur max.</span><output data-o="maxDepth"></output></div>
+          <input type="range" data-k="maxDepth" min="0" max="10" step="1"></div>
+        <div class="row"><span class="lbl">Modifiées depuis</span>
+          <select class="sel" data-k="recency" style="width:150px">
+            <option value="0">Toujours</option><option value="1">24 heures</option><option value="7">7 jours</option>
+            <option value="30">30 jours</option><option value="90">3 mois</option><option value="365">1 an</option></select></div>
+        <div class="row"><span class="lbl">Pages</span><label class="sw"><input type="checkbox" data-k="typePage"><i></i></label></div>
+        <div class="row"><span class="lbl">Bases de données</span><label class="sw"><input type="checkbox" data-k="typeDb"><i></i></label></div>
+        <div class="row"><span class="lbl">Lignes de bases</span><label class="sw"><input type="checkbox" data-k="typeRow"><i></i></label></div>
+        <div class="row"><span class="lbl">Seulement les pages liées<small>Au moins une mention entrante ou sortante</small></span><label class="sw"><input type="checkbox" data-k="linkedOnly"><i></i></label></div>
+        <div class="row"><span class="lbl">Garder le chemin<small>Affiche les parents des pages filtrées</small></span><label class="sw"><input type="checkbox" data-k="keepPath"><i></i></label></div>
+        <div class="row" style="margin-top:4px"><span class="lbl" style="color:var(--ink);font-weight:600">Branches</span>
+          <span class="linkbtns"><button class="lnk" id="brAll">Toutes</button><button class="lnk" id="brNone">Aucune</button></span></div>
+        <div class="chips" id="branchList"></div>
+      </div>
+    </details>
+    <details class="sec" open>
+      <summary>Graphe local<svg class="ico chev"><use href="#i-chev"/></svg></summary>
+      <div class="inner">
+        <div class="row"><span class="lbl">Autour de la page sélectionnée<small>Comme le graphe local d'Obsidian</small></span><label class="sw"><input type="checkbox" data-k="local"><i></i></label></div>
+        <div class="rng"><div class="top"><span>Rayon</span><output data-o="localDepth"></output></div>
+          <input type="range" data-k="localDepth" min="1" max="4" step="1"></div>
+      </div>
+    </details>
+    <details class="sec" open>
+      <summary>Titres<svg class="ico chev"><use href="#i-chev"/></svg></summary>
+      <div class="inner">
+        <div class="seg" data-k="labels"><button data-v="none">Aucun</button><button data-v="auto">Importants</button><button data-v="all">Tous</button></div>
+        <div class="rng"><div class="top"><span>Importance minimale</span><output data-o="labelMin"></output></div>
+          <input type="range" data-k="labelMin" min="1" max="20" step="1">
+          <div class="hint">Plus la valeur est haute, moins il y a de titres. Le zoom en révèle davantage.</div></div>
+        <div class="row"><span class="lbl">Éviter les chevauchements</span><label class="sw"><input type="checkbox" data-k="declutter"><i></i></label></div>
+        <div class="rng"><div class="top"><span>Taille du texte</span><output data-o="fontSize"></output></div>
+          <input type="range" data-k="fontSize" min="8" max="18" step="1"></div>
+        <div class="row"><span class="lbl">Afficher les icônes</span><label class="sw"><input type="checkbox" data-k="showIcons"><i></i></label></div>
+      </div>
+    </details>
+    <details class="sec">
+      <summary>Apparence<svg class="ico chev"><use href="#i-chev"/></svg></summary>
+      <div class="inner">
+        <div class="row"><span class="lbl">Couleur</span>
+          <select class="sel" data-k="colorBy" style="width:160px">
+            <option value="branch">Branche</option><option value="depth">Profondeur</option>
+            <option value="recency">Récence</option><option value="type">Type</option><option value="none">Aucune</option></select></div>
+        <div class="row"><span class="lbl">Taille des nœuds</span>
+          <select class="sel" data-k="sizeBy" style="width:160px">
+            <option value="degree">Connexions</option><option value="descendants">Sous-pages</option><option value="uniform">Uniforme</option></select></div>
+        <div class="rng"><div class="top"><span>Échelle des nœuds</span><output data-o="nodeScale"></output></div>
+          <input type="range" data-k="nodeScale" min="0.5" max="2.5" step="0.1"></div>
+        <div class="row"><span class="lbl">Liens de hiérarchie</span><label class="sw"><input type="checkbox" data-k="showTree"><i></i></label></div>
+        <div class="row"><span class="lbl">Liens de mention</span><label class="sw"><input type="checkbox" data-k="showLinks"><i></i></label></div>
+        <div class="rng"><div class="top"><span>Épaisseur des liens</span><output data-o="edgeWidth"></output></div>
+          <input type="range" data-k="edgeWidth" min="0.5" max="3" step="0.1"></div>
+      </div>
+    </details>
+    <details class="sec">
+      <summary>Forces<svg class="ico chev"><use href="#i-chev"/></svg></summary>
+      <div class="inner">
+        <div class="rng"><div class="top"><span>Répulsion</span><output data-o="repel"></output></div>
+          <input type="range" data-k="repel" min="10" max="400" step="5"></div>
+        <div class="rng"><div class="top"><span>Longueur des liens</span><output data-o="linkDist"></output></div>
+          <input type="range" data-k="linkDist" min="10" max="200" step="5"></div>
+        <div class="rng"><div class="top"><span>Gravité vers le centre</span><output data-o="gravity"></output></div>
+          <input type="range" data-k="gravity" min="0" max="0.2" step="0.005"></div>
+      </div>
+    </details>
+    <details class="sec">
+      <summary>Données & raccourcis<svg class="ico chev"><use href="#i-chev"/></svg></summary>
+      <div class="inner">
+        <div class="hint" id="dataInfo" style="margin:0"></div>
+        <div class="linkbtns"><button class="lnk" id="changeKey">Changer la clé d'accès</button><button class="lnk" id="fullResync">Tout relire</button></div>
+        <div class="hint" style="margin:0;line-height:1.9">
+          <kbd>/</kbd> rechercher · <kbd>Échap</kbd> désélectionner · <kbd>F</kbd> tout afficher · <kbd>L</kbd> titres ·
+          <kbd>G</kbd> réglages · <kbd>R</kbd> actualiser · <kbd>Espace</kbd> figer · <kbd>+</kbd>/<kbd>−</kbd> zoom
+        </div>
+      </div>
+    </details>
+  </div>
+  <div class="foot"><button class="btn" id="resetSettings">Réinitialiser</button><button class="btn" id="bFit2">Tout afficher</button></div>
+</aside>
+
+<aside id="info" class="panel" aria-label="Page sélectionnée"></aside>
 <div id="legend"></div>
-<div id="panel" class="sheet"></div>
-<div id="settings" class="sheet">
-  <button class="close" data-close="settings">✕</button>
-  <h3>Réglages</h3>
-  <label><input id="tTree" type="checkbox" checked> Hiérarchie (parent → enfant)</label>
-  <label><input id="tLink" type="checkbox" checked> Mentions et liens</label>
-  <label><input id="tRows" type="checkbox"> Lignes des bases de données</label>
-  <label><input id="tColor" type="checkbox" checked> Couleur par branche</label>
-  <label><input id="tLabels" type="checkbox"> Afficher tous les titres</label>
-  <div class="meta">Clé d'accès</div>
-  <button id="changeKey">Changer la clé</button>
-  <button id="resetCache">Tout relire</button>
-  <div class="meta" id="info"></div>
-</div>
-<div id="gate"><div>
-  <h2>Graphe Notion</h2>
-  <p>Entre la clé d'accès (<code>APP_KEY</code>) définie lors du déploiement. Elle reste sur cet appareil.</p>
-  <input id="keyIn" type="password" autocomplete="current-password" placeholder="Clé d'accès" style="width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px;font:inherit">
-  <p class="err" id="keyErr"></p>
-  <button id="keyOk">Valider</button>
-</div></div>
 <div id="tip"></div>
+<div id="toast"></div>
+<div id="empty"><div>Aucune page ne correspond aux filtres.<br><button class="lnk" id="emptyReset" style="margin-top:6px">Réinitialiser les filtres</button></div></div>
+
+<div id="gate"><div class="card">
+  <h1>Graphe Notion</h1>
+  <p>Entre la clé d'accès (<code>APP_KEY</code>) définie lors du déploiement. Elle reste sur cet appareil.</p>
+  <input id="keyIn" type="password" autocomplete="current-password" placeholder="Clé d'accès">
+  <div class="err" id="keyErr"></div>
+  <button class="btn" id="keyOk">Valider</button>
+</div></div>
+
 <script src="/d3.min.js"></script>
 <script src="/app.js"></script>
 </body>
