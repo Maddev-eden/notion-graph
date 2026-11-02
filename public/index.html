@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1a1a19">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Graphe">
+<title>Graphe Notion</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#1a1a19; --panel:#232322; --line:#383835;
+    --ink:#f0efec; --ink2:#c3c2b7; --muted:#8a897f;
+    --node:#9b9a91; --accent:#9085e9; --edge:#4a4a46; --edge-link:#6a6a64; --err:#e66767;
+    --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
+    --sl:env(safe-area-inset-left,0px); --sr:env(safe-area-inset-right,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overscroll-behavior:none;
+    font:14px/1.4 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+  #bar{position:fixed;top:0;left:0;right:0;display:flex;gap:8px;align-items:center;z-index:5;
+    padding:calc(8px + var(--st)) calc(10px + var(--sr)) 14px calc(10px + var(--sl));
+    background:linear-gradient(var(--bg) 60%,transparent)}
+  #q{flex:1 1 160px;min-width:0;max-width:280px;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:7px 10px;font:inherit}
+  button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;
+    padding:7px 11px;font:inherit;cursor:pointer;flex:none}
+  button:hover{border-color:var(--muted)}
+  button:disabled{opacity:.5;cursor:default}
+  #status{margin-left:auto;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  #status.err{color:var(--err)}
+  svg{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-action:none;cursor:grab}
+  .edge{stroke:var(--edge);stroke-width:1}
+  .edge.link{stroke:var(--edge-link);stroke-dasharray:3 3}
+  .node circle{stroke:var(--bg);stroke-width:1.5;cursor:pointer}
+  .node.root circle{fill:none;stroke:var(--ink2);stroke-width:1.5}
+  .node.database circle{stroke:var(--ink2);stroke-width:1}
+  .node text{fill:var(--ink2);font-size:11px;pointer-events:none;paint-order:stroke;
+    stroke:var(--bg);stroke-width:3px;stroke-linejoin:round}
+  .dim{opacity:.12}
+  .hl circle{stroke:var(--ink)}
+  .edge.hl{stroke:var(--accent);stroke-width:1.5;opacity:1}
+  .sheet{position:fixed;z-index:8;background:#232322;border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;display:none;overflow:auto}
+  .sheet h3{margin:0 0 4px;font-size:15px}
+  .sheet .meta{color:var(--muted);margin:6px 0}
+  .sheet a{color:var(--accent)}
+  .sheet ul{margin:4px 0 0;padding-left:18px;color:var(--ink2)}
+  .sheet li{cursor:pointer;padding:3px 0}
+  .sheet label{display:flex;gap:8px;align-items:center;color:var(--ink2);padding:6px 0;cursor:pointer}
+  .sheet input[type=password],.sheet input[type=text]{width:100%;background:var(--bg);border:1px solid var(--line);
+    color:var(--ink);border-radius:8px;padding:8px;font:inherit}
+  .close{position:absolute;right:8px;top:8px;padding:2px 9px}
+  #panel{right:calc(10px + var(--sr));top:calc(58px + var(--st));width:300px;max-height:70vh}
+  #settings{right:calc(10px + var(--sr));top:calc(58px + var(--st));width:320px;max-height:80vh}
+  #legend{position:fixed;left:calc(10px + var(--sl));bottom:calc(10px + var(--sb));background:rgba(35,35,34,.9);
+    border:1px solid var(--line);border-radius:10px;padding:8px 10px;max-width:240px;z-index:5;font-size:12px}
+  #legend .row{display:flex;gap:6px;align-items:center;color:var(--ink2);cursor:pointer;padding:1px 0}
+  #legend .sw{width:10px;height:10px;border-radius:50%;flex:none}
+  #legend .key{color:var(--muted);margin-top:6px;border-top:1px solid var(--line);padding-top:6px}
+  #legend.min .row{display:none}
+  #legend.min .key{margin:0;border:0;padding:0}
+  #gate{position:fixed;inset:0;z-index:9;display:none;align-items:center;justify-content:center;background:var(--bg);padding:20px}
+  #gate div{max-width:380px;width:100%}
+  #gate h2{margin:0 0 6px}
+  #gate p{color:var(--ink2)}
+  #gate .err{color:var(--err);min-height:1.4em}
+  #tip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--line);
+    border-radius:6px;padding:4px 8px;display:none;z-index:7;white-space:nowrap}
+  @media (max-width:640px){
+    #panel,#settings{left:calc(8px + var(--sl));right:calc(8px + var(--sr));top:auto;width:auto;
+      bottom:calc(8px + var(--sb));max-height:55vh}
+    #legend{max-width:60vw}
+    .node text{font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div id="bar">
+  <input id="q" type="search" placeholder="Rechercher…" autocomplete="off" enterkeyhint="search">
+  <button id="refresh" title="Actualiser">↻</button>
+  <button id="gear" title="Réglages">⚙</button>
+  <span id="status">Chargement…</span>
+</div>
+<svg id="g"></svg>
+<div id="legend"></div>
+<div id="panel" class="sheet"></div>
+<div id="settings" class="sheet">
+  <button class="close" data-close="settings">✕</button>
+  <h3>Réglages</h3>
+  <label><input id="tTree" type="checkbox" checked> Hiérarchie (parent → enfant)</label>
+  <label><input id="tLink" type="checkbox" checked> Mentions et liens</label>
+  <label><input id="tRows" type="checkbox"> Lignes des bases de données</label>
+  <label><input id="tColor" type="checkbox" checked> Couleur par branche</label>
+  <label><input id="tLabels" type="checkbox"> Afficher tous les titres</label>
+  <div class="meta">Clé d'accès</div>
+  <button id="changeKey">Changer la clé</button>
+  <button id="resetCache">Tout relire</button>
+  <div class="meta" id="info"></div>
+</div>
+<div id="gate"><div>
+  <h2>Graphe Notion</h2>
+  <p>Entre la clé d'accès (<code>APP_KEY</code>) définie lors du déploiement. Elle reste sur cet appareil.</p>
+  <input id="keyIn" type="password" autocomplete="current-password" placeholder="Clé d'accès" style="width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px;font:inherit">
+  <p class="err" id="keyErr"></p>
+  <button id="keyOk">Valider</button>
+</div></div>
+<div id="tip"></div>
+<script src="/d3.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
