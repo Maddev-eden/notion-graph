@@ -206,7 +206,8 @@
     const pages = [...nodes.values()].filter(n => n.id !== ROOT && n.type !== "row").length;
     const shown = lastView ? lastView.ns.filter(n => n.id !== ROOT).length : 0;
     const total = [...nodes.values()].filter(n => n.id !== ROOT).length;
-    return `${pages} pages` + (lastView && shown < total ? ` · ${shown} affichées` : "") + ` · màj ${ago(lastUpdated)}`;
+    const filtered = lastView && $("fBadge").classList.contains("show");
+    return `${pages} pages` + (filtered ? ` · ${shown} affichées` : "") + ` · màj ${ago(lastUpdated)}`;
   };
   // Branche = ancêtre au premier niveau qui se divise vraiment : si une seule page est à la racine
   // (ex. tout rangé sous « Second-Brain »), on colore par ses enfants plutôt que tout en une couleur.
@@ -277,9 +278,15 @@
       if (!mIn.has(b)) mIn.set(b, new Set()); mIn.get(b).add(a);
     }
     // branches : couleur fixe pour les 7 plus grosses (ordonnées par titre, pas par rang), le reste « Autres »
+    // comptage par type : les lignes de bases (souvent des centaines d'entrées de tracker) ne doivent pas écraser le reste
     const counts = new Map();
-    for (const n of nodes.values()) if (n.id !== ROOT && n.branch !== TRUNK) counts.set(n.branch, (counts.get(n.branch) || 0) + 1);
-    const branches = [...counts].map(([id, count]) => ({ id, count, title: nodes.get(id)?.title || "?" })).sort((a, b) => b.count - a.count);
+    for (const n of nodes.values()) if (n.id !== ROOT && n.branch !== TRUNK) {
+      if (!counts.has(n.branch)) counts.set(n.branch, { page: 0, database: 0, row: 0 });
+      counts.get(n.branch)[n.type] = (counts.get(n.branch)[n.type] || 0) + 1;
+    }
+    const branches = [...counts].map(([id, c]) => ({ id, c, base: c.page + c.database, title: nodes.get(id)?.title || "?",
+      get count() { return (S.typePage ? c.page : 0) + (S.typeDb ? c.database : 0) + (S.typeRow ? c.row : 0); } }))
+      .sort((a, b) => b.base - a.base);
     const colored = branches.slice(0, PALETTE.length).map(b => b.id).sort((a, b) => nodes.get(a).title.localeCompare(nodes.get(b).title));
     const branchColor = new Map(colored.map((id, i) => [id, PALETTE[i]]));
     const times = [...nodes.values()].map(n => Date.parse(n.edited)).filter(Number.isFinite);
