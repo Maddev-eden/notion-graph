@@ -1,6 +1,7 @@
 (() => {
   "use strict";
   const ROOT = "__root__";
+  const TRUNK = "__trunk__";
   const STORE = "notion-graph-app-v1";
   const KEY_STORE = "notion-graph-key";
   const AUTO_MS = 15 * 60 * 1000;   // re-synchronisation toutes les 15 min quand l'app est visible
@@ -204,11 +205,19 @@
     const pages = [...nodes.values()].filter(n => n.id !== ROOT && n.type !== "row").length;
     return `${pages} pages · màj ${ago(lastUpdated)}`;
   };
+  // Branche = ancêtre au premier niveau qui se divise vraiment : si une seule page est à la racine
+  // (ex. tout rangé sous « Second-Brain »), on colore par ses enfants plutôt que tout en une couleur.
   function computeBranches(map) {
+    const kids = new Map();
+    for (const n of map.values()) if (n.id !== ROOT) kids.set(n.parent, (kids.get(n.parent) || 0) + 1);
+    let top = ROOT, guard = 0;
+    while (kids.get(top) === 1 && guard++ < 10) top = [...map.values()].find(n => n.parent === top && n.id !== ROOT).id;
     for (const n of map.values()) {
-      let cur = n, guard = 0;
-      while (cur && cur.parent && cur.parent !== ROOT && guard++ < 60) cur = map.get(cur.parent);
-      n.branch = n.id === ROOT ? ROOT : (cur ? cur.id : n.id);
+      if (n.id === ROOT) { n.branch = ROOT; continue; }
+      let cur = n, g = 0;
+      while (cur && cur.parent && cur.parent !== top && cur.parent !== ROOT && g++ < 60) cur = map.get(cur.parent);
+      // pages de la chaîne racine (ex. Second-Brain lui-même) : neutres, hors légende
+      n.branch = cur && cur.parent === top ? cur.id : TRUNK;
     }
   }
 
@@ -280,10 +289,10 @@
     applyHighlight();
   }
   const radius = d => d.id === ROOT ? 7 : 3 + Math.sqrt(degree.get(d.id) || 1) * 1.6;
-  const colorOf = n => n.id === ROOT ? "none" : ($("tColor").checked ? (branchColor.get(n.branch) || OTHER) : "var(--node)");
+  const colorOf = n => n.id === ROOT ? "none" : (!$("tColor").checked || n.branch === TRUNK) ? "var(--node)" : (branchColor.get(n.branch) || OTHER);
 
   function computeColors(ns) {
-    const counts = d3.rollup(ns.filter(n => n.id !== ROOT), v => v.length, n => n.branch);
+    const counts = d3.rollup(ns.filter(n => n.id !== ROOT && n.branch !== TRUNK), v => v.length, n => n.branch);
     // la couleur suit la branche, pas son rang : 7 plus grosses branches, triées par titre, le reste en « Autres »
     const big = [...counts].sort((a, b) => b[1] - a[1]).slice(0, PALETTE.length).map(d => d[0])
       .sort((a, b) => (nodes.get(a)?.title || "").localeCompare(nodes.get(b)?.title || ""));
@@ -323,7 +332,7 @@
       if (nb) return nb.has(d.id) ? null : "none";
       if (q) return d.title.toLowerCase().includes(q) ? null : "none";
       if (all) return null;
-      return transformK > 1.4 || d.parent === ROOT || (degree.get(d.id) || 0) >= 6 ? null : "none";
+      return transformK > 1.4 || d.parent === ROOT || d.id === d.branch || (degree.get(d.id) || 0) >= 6 ? null : "none";
     });
   }
   function tip(ev, d) {
